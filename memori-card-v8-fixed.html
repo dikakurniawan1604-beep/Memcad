@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memori Card Seni Budaya Indonesia</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; font-family: 'Poppins', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #2c1810 0%, #5d4037 50%, #3e2723 100%);
+      background-attachment: fixed;
+    }
+    .batik-pattern {
+      background-image: 
+        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212,175,55,0.1) 10px, rgba(212,175,55,0.1) 20px),
+        repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(212,175,55,0.08) 10px, rgba(212,175,55,0.08) 20px);
+    }
+    .card {
+      background: #8B4513; color: white; border-radius: 10px;
+      min-height: 80px; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; font-size: 13px;
+      font-weight: bold; padding: 10px; text-align: center;
+      transition: all 0.3s ease;
+    }
+    .card-back { font-size: 32px; }
+    .card.flipped { background: #FFFDE7; color: #1A1A1A; border: 2px solid #F9A825; }
+    .card.flipped.card-answer { background: #E8F5E9; border: 2px solid #388E3C; }
+    .card.flipped .card-back { display: none; }
+    .card.flipped .card-front { display: block !important; }
+    .card.matched { background: #A5D6A7; color: #1A1A1A; pointer-events: none; opacity: 0.8; }
+    .card:not(.matched):hover { transform: scale(1.05); }
+    .score-badge {
+      background: linear-gradient(135deg, #d4af37 0%, #f4e4b6 100%);
+      color: #2c1810; font-weight: 700; padding: 0.5rem 1rem;
+      border-radius: 50px; font-size: 1.1rem;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #d4af37 0%, #e8c04d 100%);
+      color: #2c1810; font-weight: 700; padding: 0.75rem 1.5rem;
+      border-radius: 8px; border: none; cursor: pointer;
+      transition: all 0.3s; font-size: 1rem;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,175,55,0.4); }
+    .btn-secondary {
+      background: rgba(212,175,55,0.2); color: #d4af37; font-weight: 600;
+      padding: 0.5rem 1rem; border-radius: 6px; border: 2px solid #d4af37;
+      cursor: pointer; transition: all 0.3s; font-size: 0.9rem;
+    }
+    .btn-secondary:hover { background: rgba(212,175,55,0.3); }
+    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #3e2723; border-radius: 16px; padding: 2rem;
+      max-width: 500px; width: 90%; text-align: center; color: #fff;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+    .title-game { font-family: 'Playfair Display', serif; color: #d4af37; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  </style>
+</head>
+<body class="h-full overflow-auto batik-pattern">
+<div id="app" class="h-full flex flex-col">
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="min-h-full flex flex-col items-center justify-center px-4 fade-in">
+    <div class="bg-black bg-opacity-30 backdrop-blur-sm rounded-2xl p-8 w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="text-6xl mb-4">🎴</div>
+        <h1 class="title-game text-3xl font-bold mb-2">Memori Card</h1>
+        <p class="text-amber-100 text-sm">2 Pemain - Budaya Indonesia</p>
+      </div>
+      <div class="space-y-4 mb-6">
+        <input type="text" id="player1Input" placeholder="Nama Pemain 1"
+          class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-10 text-white placeholder-gray-400 border border-amber-600 focus:outline-none focus:border-amber-400">
+        <input type="text" id="player2Input" placeholder="Nama Pemain 2"
+          class="w-full px-4 py-3 rounded-lg bg-white bg-opacity-10 text-white placeholder-gray-400 border border-amber-600 focus:outline-none focus:border-amber-400">
+      </div>
+      <button onclick="startGame2P()" class="btn-primary w-full">▶ Mulai Game</button>
+    </div>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="gameScreen" class="hidden min-h-full flex flex-col p-4 fade-in">
+    <!-- Scoreboard -->
+    <div id="scoreboard" class="bg-black bg-opacity-30 backdrop-blur-sm rounded-lg p-4 mb-4 flex justify-between items-center text-white">
+      <div class="text-center flex-1">
+        <p class="text-xs text-gray-300">Pemain 1</p>
+        <p class="text-base font-bold text-amber-300" id="p1-name">-</p>
+        <p class="text-lg font-bold" id="p1-score">0 poin</p>
+      </div>
+      <div class="text-center flex-1 bg-amber-600 rounded-lg px-3 py-2">
+        <p class="text-xs text-gray-200">GILIRAN</p>
+        <p class="text-base font-bold" id="turn-indicator">-</p>
+      </div>
+      <div class="text-center flex-1">
+        <p class="text-xs text-gray-300">Pemain 2</p>
+        <p class="text-base font-bold text-amber-300" id="p2-name">-</p>
+        <p class="text-lg font-bold" id="p2-score">0 poin</p>
+      </div>
+    </div>
+
+    <!-- Message Box -->
+    <div id="message-box" class="text-center min-h-8 font-bold text-amber-300 mb-3" style="font-size:14px;"></div>
+
+    <!-- Game Area -->
+    <div id="game-area" class="flex gap-4 flex-1 max-w-3xl mx-auto w-full mb-4">
+      <!-- Question Section -->
+      <div id="question-section" class="flex-1">
+        <div style="background:#8B4513;color:white;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-bottom:12px;font-size:13px;">
+          ❓ PERTANYAAN
+        </div>
+        <div id="question-container" class="space-y-2"></div>
+      </div>
+      <!-- Answer Section -->
+      <div id="answer-section" class="flex-1">
+        <div style="background:#2E7D32;color:white;padding:10px;border-radius:8px;text-align:center;font-weight:bold;margin-bottom:12px;font-size:13px;">
+          💡 JAWABAN
+        </div>
+        <div id="answer-container" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex gap-3 justify-center pb-4">
+      <button onclick="resetGame()" class="btn-secondary">🔄 Reset Game</button>
+      <button onclick="goToLogin()" class="btn-secondary">← Kembali ke Login</button>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content">
+      <h2 class="text-2xl font-bold mb-4 title-game">🎉 Selesai!</h2>
+      <p class="mb-2 text-gray-300">Skor Akhir:</p>
+      <div id="finalScore" class="mb-4"></div>
+      <p id="resultMessage" class="mb-6 text-xl font-bold text-amber-300"></p>
+      <div class="flex gap-3">
+        <button onclick="mainLagi()" class="btn-primary flex-1">🔄 Main Lagi</button>
+        <button onclick="backToLogin()" class="btn-secondary flex-1">← Menu</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ========== CARD DATA ==========
+  const questionCards = [
+    {id:1,  pairId:1, type:"question", content:"Tari Bali yang gerakannya meniru burung merak?"},
+    {id:3,  pairId:2, type:"question", content:"Rumah adat suku Toraja Sulawesi Selatan?"},
+    {id:5,  pairId:3, type:"question", content:"Senjata tradisional khas Sulawesi Selatan?"},
+    {id:7,  pairId:4, type:"question", content:"Alat musik bambu khas Jawa Barat?"},
+    {id:9,  pairId:5, type:"question", content:"Kain tenun tradisional Nusa Tenggara Timur?"},
+    {id:11, pairId:6, type:"question", content:"Upacara pembakaran jenazah adat Bali?"}
+  ];
+
+  const answerCardsOriginal = [
+    {id:2,  pairId:1, type:"answer", content:"Tari Merak"},
+    {id:4,  pairId:2, type:"answer", content:"Tongkonan"},
+    {id:6,  pairId:3, type:"answer", content:"Badik"},
+    {id:8,  pairId:4, type:"answer", content:"Angklung"},
+    {id:10, pairId:5, type:"answer", content:"Kain Songket NTT"},
+    {id:12, pairId:6, type:"answer", content:"Ngaben"}
+  ];
+
+  // ========== GAME STATE ==========
+  let selectedQuestion = null;
+  let selectedAnswer = null;
+  let currentPlayer = 1;
+  let player1Name = "";
+  let player2Name = "";
+  let scores = {1: 0, 2: 0};
+  let matchedPairs = [];
+  let isChecking = false;
+  let answerCards = [];
+
+  // ========== NAVIGATION ==========
+  function hideAllScreens() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('gameScreen').classList.add('hidden');
+  }
+
+  function goToLogin() {
+    hideAllScreens();
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
+
+  function startGame2P() {
+    const p1 = document.getElementById('player1Input').value.trim();
+    const p2 = document.getElementById('player2Input').value.trim();
+    if (!p1 || !p2) {
+      alert('Masukkan nama kedua pemain!');
+      return;
+    }
+    player1Name = p1;
+    player2Name = p2;
+    hideAllScreens();
+    document.getElementById('gameScreen').classList.remove('hidden');
+    initializeGame();
+  }
+
+  // ========== GAME INIT ==========
+  function initializeGame() {
+    selectedQuestion = null;
+    selectedAnswer = null;
+    currentPlayer = 1;
+    scores = {1: 0, 2: 0};
+    matchedPairs = [];
+    isChecking = false;
+    answerCards = JSON.parse(JSON.stringify(answerCardsOriginal));
+    answerCards.sort(() => Math.random() - 0.5);
+    renderCards();
+    updateScoreboard();
+    showMessage('');
+  }
+
+  // ========== RENDER CARDS ==========
+  function renderCards() {
+    const qContainer = document.getElementById('question-container');
+    const aContainer = document.getElementById('answer-container');
+    qContainer.innerHTML = '';
+    aContainer.innerHTML = '';
+
+    questionCards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card card-question';
+      div.id = 'card-' + card.id;
+      div.innerHTML = '<span class="card-back">?</span><span class="card-front" style="display:none">' + card.content + '</span>';
+      div.onclick = () => handleCardClick(card, div, 'question');
+      qContainer.appendChild(div);
+    });
+
+    answerCards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'card card-answer';
+      div.id = 'card-' + card.id;
+      div.innerHTML = '<span class="card-back">?</span><span class="card-front" style="display:none">' + card.content + '</span>';
+      div.onclick = () => handleCardClick(card, div, 'answer');
+      aContainer.appendChild(div);
+    });
+  }
+
+  // ========== CARD CLICK ==========
+  function handleCardClick(card, div, type) {
+    if (isChecking) return;
+    if (div.classList.contains('matched')) return;
+    if (div.classList.contains('flipped')) return;
+
+    if (type === 'question' && selectedQuestion && !selectedAnswer) {
+      document.getElementById('card-' + selectedQuestion.id).classList.remove('flipped');
+      selectedQuestion = null;
+    }
+    if (type === 'answer' && selectedAnswer && !selectedQuestion) {
+      document.getElementById('card-' + selectedAnswer.id).classList.remove('flipped');
+      selectedAnswer = null;
+    }
+
+    div.classList.add('flipped');
+
+    if (type === 'question') {
+      selectedQuestion = card;
+    } else {
+      selectedAnswer = card;
+    }
+
+    if (selectedQuestion && selectedAnswer) {
+      isChecking = true;
+      setTimeout(() => checkMatch(), 800);
+    }
+  }
+
+  // ========== CHECK MATCH ==========
+  function checkMatch() {
+    const qDiv = document.getElementById('card-' + selectedQuestion.id);
+    const aDiv = document.getElementById('card-' + selectedAnswer.id);
+
+    if (selectedQuestion.pairId === selectedAnswer.pairId) {
+      qDiv.classList.add('matched');
+      aDiv.classList.add('matched');
+      matchedPairs.push(selectedQuestion.pairId);
+      scores[currentPlayer] += 10;
+      showMessage('✅ Cocok! +10 poin untuk ' + getPlayerName(currentPlayer));
+      updateScoreboard();
+    } else {
+      qDiv.classList.remove('flipped');
+      aDiv.classList.remove('flipped');
+      showMessage('❌ Tidak cocok! Giliran berganti.');
+      currentPlayer = currentPlayer === 1 ? 2 : 1;
+      updateScoreboard();
+    }
+
+    selectedQuestion = null;
+    selectedAnswer = null;
+    isChecking = false;
+
+    if (matchedPairs.length === 6) {
+      setTimeout(() => showResult(), 600);
+    }
+  }
+
+  // ========== HELPERS ==========
+  function getPlayerName(p) { return p === 1 ? player1Name : player2Name; }
+
+  function showMessage(text) {
+    document.getElementById('message-box').textContent = text;
+  }
+
+  function updateScoreboard() {
+    document.getElementById('p1-name').textContent = player1Name;
+    document.getElementById('p2-name').textContent = player2Name;
+    document.getElementById('p1-score').textContent = scores[1] + ' poin';
+    document.getElementById('p2-score').textContent = scores[2] + ' poin';
+    document.getElementById('turn-indicator').textContent = getPlayerName(currentPlayer);
+  }
+
+  // ========== SHOW RESULT ==========
+  function showResult() {
+    const modal = document.getElementById('resultModal');
+    const s1 = scores[1], s2 = scores[2];
+
+    document.getElementById('finalScore').innerHTML =
+      '<p class="text-2xl font-bold text-amber-300">' + player1Name + ': ' + s1 + ' poin</p>' +
+      '<p class="text-lg text-gray-400 my-1">VS</p>' +
+      '<p class="text-2xl font-bold text-amber-300">' + player2Name + ': ' + s2 + ' poin</p>';
+
+    let msg = '';
+    if (s1 > s2) msg = '🏆 ' + player1Name + ' Menang!';
+    else if (s2 > s1) msg = '🏆 ' + player2Name + ' Menang!';
+    else msg = '🤝 Seri!';
+    document.getElementById('resultMessage').textContent = msg;
+
+    modal.classList.add('active');
+  }
+
+  // ========== FIXED: MAIN LAGI ==========
+  function mainLagi() {
+    // Tutup modal dulu
+    document.getElementById('resultModal').classList.remove('active');
+    // Reset & mulai ulang game dengan nama yang sama
+    initializeGame();
+    // Pastikan game screen tampil
+    hideAllScreens();
+    document.getElementById('gameScreen').classList.remove('hidden');
+  }
+
+  // ========== FIXED: BACK TO LOGIN (tombol Menu) ==========
+  function backToLogin() {
+    // Tutup modal dulu
+    document.getElementById('resultModal').classList.remove('active');
+    // Kembali ke login & reset input
+    document.getElementById('player1Input').value = '';
+    document.getElementById('player2Input').value = '';
+    goToLogin();
+  }
+
+  // ========== RESET GAME (tombol di dalam game) ==========
+  function resetGame() {
+    initializeGame();
+  }
+</script>
+</body>
+</html>
